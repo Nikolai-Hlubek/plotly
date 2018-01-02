@@ -4,14 +4,11 @@
 #' `plot_ly` is used. If that is also `NULL`, '100\%' is the default.
 #' @param height attribute of the iframe. If `NULL`, the height in
 #' `plot_ly` is used. If that is also `NULL`, '400px' is the default.
-#' @param file deprecated.
+#' @param file Save as external file. If `NULL` embed plot in notebook.
 #' @author Carson Sievert
 #' @export
 embed_notebook <- function(x, width = NULL, height = NULL, file = NULL) {
   try_library("IRdisplay", "embed_notebook")
-  if (!is.null(file)) {
-    warning("The file argument is no longer used", call. = FALSE)
-  }
   UseMethod("embed_notebook")
 }
 
@@ -29,12 +26,18 @@ embed_notebook.plotly <- function(x, width = NULL, height = NULL, file = NULL) {
     return(display(html))
   }
   p <- plotly_build(x)
-  tmp <- tempfile(fileext = ".html")
-  on.exit(unlink(tmp), add = TRUE)
-  res <- htmlwidgets::saveWidget(p, tmp)
+
+  if( is.null(file) ){
+    file <- tempfile(fileext = ".html")
+    on.exit(unlink(file), add = TRUE)
+  }
+
+  res <- htmlwidgets::saveWidget(p, file)
+
   # wrap in an iframe as *nteract* won't do this automatically
   html <- plotly_iframe(
-    base64enc::dataURI(mime = "text/html;charset=utf-8", file = tmp),
+#    base64enc::dataURI(mime = "text/html;charset=utf-8", file = file),
+    file,
     width %||% p$width %||% "100%", 
     height %||% p$height %||% 400,
     ""
